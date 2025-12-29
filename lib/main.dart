@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart'; // Import Camera
-import 'screens/home_screen.dart';
+import 'screens/pose_selection_screen.dart'; // CONNECTED: Your new beautiful UI
 
 // 1. Global variable to store the list of cameras
 List<CameraDescription> cameras = [];
@@ -25,12 +25,13 @@ class AlignMeApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'AlignMe Pose',
+      title: 'PosePerfect', // Updated to match your new UI Name
       theme: ThemeData(
-        primarySwatch: Colors.teal,
+        primarySwatch: Colors.teal, // You can change this to purple to match your gradient later if you want
         useMaterial3: true,
       ),
-      home: HomeScreen(),
+      // CONNECTED: Starts with your new Slider UI
+      home: const PoseSelectionScreen(), 
       debugShowCheckedModeBanner: false,
     );
   }

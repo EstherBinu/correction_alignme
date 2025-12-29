@@ -39,6 +39,7 @@ dependencies:
 
   # UI Helper (optional but recommended for correct math)
   cupertino_icons: ^1.0.8
+  flutter_animate: ^4.5.2
 
 dev_dependencies:
   flutter_test:

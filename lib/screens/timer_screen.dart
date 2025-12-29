@@ -38,7 +38,7 @@ class _TimerScreenState extends State<TimerScreen> {
     // Replace this screen with the Camera screen so back button goes to Home
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const PoseDetectorView()),
+      MaterialPageRoute(builder: (context) => PoseDetectorView(poseName: widget.poseName),),
     );
   }
 

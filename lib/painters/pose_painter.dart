@@ -5,7 +5,7 @@ class PosePainter extends CustomPainter {
   final List<Pose> poses;
   final Size absoluteImageSize;
   final InputImageRotation rotation;
-  final bool isPostureCorrect; // NEW: We receive the color decision from outside
+  final bool isPostureCorrect;
 
   PosePainter(this.poses, this.absoluteImageSize, this.rotation, this.isPostureCorrect);
 
@@ -14,11 +14,36 @@ class PosePainter extends CustomPainter {
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
-      ..color = isPostureCorrect ? Colors.green : Colors.red; // Use the passed color
+      ..color = isPostureCorrect ? Colors.green : Colors.red;
+
+    final jointPaint = Paint()
+      ..style = PaintingStyle.fill
+      ..color = Colors.white;
 
     for (final pose in poses) {
+      // 1. Draw Bones (Lines)
       _drawAllConnections(canvas, pose, paint, size);
+      
+      // 2. Draw Joints (Circles) - NEW
+      for (final landmark in pose.landmarks.values) {
+        _drawJoint(canvas, landmark, jointPaint, size);
+      }
     }
+  }
+
+  void _drawJoint(Canvas canvas, PoseLandmark landmark, Paint paint, Size screen) {
+    // Skip if invisible
+    if (landmark.likelihood < 0.5) return;
+
+    final double scaleX = screen.width / absoluteImageSize.width;
+    final double scaleY = screen.height / absoluteImageSize.height;
+
+    // Apply Mirroring & Scaling
+    final x = screen.width - (landmark.x * scaleX);
+    final y = landmark.y * scaleY;
+
+    // Draw a circle with radius 5
+    canvas.drawCircle(Offset(x, y), 5, paint);
   }
 
   void _drawAllConnections(Canvas canvas, Pose pose, Paint paint, Size size) {
@@ -47,7 +72,6 @@ class PosePainter extends CustomPainter {
     final double scaleX = screen.width / absoluteImageSize.width;
     final double scaleY = screen.height / absoluteImageSize.height;
 
-    // Mirroring Fix
     final x1 = screen.width - (p1.x * scaleX);
     final y1 = p1.y * scaleY;
     final x2 = screen.width - (p2.x * scaleX);
