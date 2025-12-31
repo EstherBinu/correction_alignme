@@ -13,7 +13,13 @@ import 'success_screen.dart';
 
 class PoseDetectorView extends StatefulWidget {
   final String poseName;
-  const PoseDetectorView({super.key, required this.poseName});
+  final int poseIndex; // NEW: Accept the index from the menu
+
+  const PoseDetectorView({
+    super.key, 
+    required this.poseName, 
+    required this.poseIndex, // NEW: Required parameter
+  });
 
   @override
   State<PoseDetectorView> createState() => _PoseDetectorViewState();
@@ -103,20 +109,24 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
         builder: (context) => SuccessScreen(
           poseName: widget.poseName,
           feedbackSummary: _feedbackLog.toList(),
-          isSuccess: isSuccess, // Pass the result status
+          isSuccess: isSuccess,
+          poseIndex: widget.poseIndex, // NEW: Pass the index forward
         ),
       ),
     );
   }
-
-  // ... (Rest of the Camera/AI code is unchanged, I'll paste the standard blocks below) ...
 
   void _initializeCamera() async {
     final camera = cameras.firstWhere(
       (c) => c.lensDirection == CameraLensDirection.front,
       orElse: () => cameras.first,
     );
-    _controller = CameraController(camera, ResolutionPreset.high, enableAudio: false, imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888);
+    _controller = CameraController(
+      camera, 
+      ResolutionPreset.high, 
+      enableAudio: false, 
+      imageFormatGroup: Platform.isAndroid ? ImageFormatGroup.nv21 : ImageFormatGroup.bgra8888
+    );
     await _controller!.initialize();
     if (!mounted) return;
     await _controller!.lockCaptureOrientation(DeviceOrientation.portraitUp);
@@ -150,7 +160,7 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
         } else {
           if (_hasEnteredCorrectPoseOnce && 
               feedback != "Perfect ${widget.poseName}!" && 
-              feedback != "Step back. Show your full body." &&
+              feedback != "Step back. Show your full body." && 
               feedback != "Unknown Pose") {
              _feedbackLog.add(feedback);
           }
@@ -205,7 +215,15 @@ class _PoseDetectorViewState extends State<PoseDetectorView> {
         children: [
           Transform.scale(scale: scale, child: Center(child: CameraPreview(_controller!))),
           if (_poses.isNotEmpty)
-            Transform.scale(scale: scale, child: Center(child: CustomPaint(painter: PosePainter(_poses, imageSize, InputImageRotation.rotation90deg, _isPostureCorrect), child: Container(width: double.infinity, height: double.infinity)))),
+            Transform.scale(
+              scale: scale, 
+              child: Center(
+                child: CustomPaint(
+                  painter: PosePainter(_poses, imageSize, InputImageRotation.rotation90deg, _isPostureCorrect), 
+                  child: Container(width: double.infinity, height: double.infinity)
+                )
+              )
+            ),
           
           // --- TOP BAR: TIME REMAINING ---
           Positioned(

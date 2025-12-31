@@ -4,8 +4,13 @@ import 'pose_detector_view.dart'; // Import the camera screen
 
 class TimerScreen extends StatefulWidget {
   final String poseName;
+  final int poseIndex; // NEW: Receive the index
 
-  const TimerScreen({super.key, required this.poseName});
+  const TimerScreen({
+    super.key, 
+    required this.poseName,
+    required this.poseIndex, // NEW: Required parameter
+  });
 
   @override
   State<TimerScreen> createState() => _TimerScreenState();
@@ -38,7 +43,12 @@ class _TimerScreenState extends State<TimerScreen> {
     // Replace this screen with the Camera screen so back button goes to Home
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => PoseDetectorView(poseName: widget.poseName),),
+      MaterialPageRoute(
+        builder: (context) => PoseDetectorView(
+          poseName: widget.poseName,
+          poseIndex: widget.poseIndex, // NEW: Pass the index forward
+        ),
+      ),
     );
   }
 

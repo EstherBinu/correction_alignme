@@ -3,7 +3,12 @@ import 'package:flutter_animate/flutter_animate.dart';
 import 'timer_screen.dart'; 
 
 class PoseSelectionScreen extends StatefulWidget {
-  const PoseSelectionScreen({super.key});
+  final int initialIndex; // NEW: Memory for which slide to start on
+
+  const PoseSelectionScreen({
+    super.key, 
+    this.initialIndex = 1 // Defaults to 1 (Tree Pose) if not specified
+  });
 
   @override
   State<PoseSelectionScreen> createState() => _PoseSelectionScreenState();
@@ -11,8 +16,8 @@ class PoseSelectionScreen extends StatefulWidget {
 
 class _PoseSelectionScreenState extends State<PoseSelectionScreen> {
   int _selectedPractice = 15; 
-  final PageController _controller = PageController(viewportFraction: 0.72);
-  int selectedIndex = 0;
+  late PageController _controller; // Late init to use widget.initialIndex
+  late int selectedIndex;
 
   final List<Map<String, dynamic>> practiceOptions = [
     {'time': 10, 'label': 'Light • 10 min/day'},
@@ -21,6 +26,7 @@ class _PoseSelectionScreenState extends State<PoseSelectionScreen> {
     {'time': 30, 'label': 'Extreme • 30 min/day'},
   ];
 
+  // --- UPDATED LIST: 15 POSES ---
   final List<Map<String, dynamic>> poses = [
     {"name": "Mountain Pose", "image": "assets/cat-cow.jpg", "desc": "Improves posture."},
     {"name": "Tree Pose", "image": "assets/pigeon-pose.jpg", "desc": "Enhances stability."},
@@ -31,7 +37,23 @@ class _PoseSelectionScreenState extends State<PoseSelectionScreen> {
     {"name": "Triangle Pose", "image": "assets/triangle.jpg", "desc": "Full body stretch."},
     {"name": "Forward Bend", "image": "assets/forward-bend.jpg", "desc": "Calms the mind."},
     {"name": "Side Stretch", "image": "assets/side-stretch.jpg", "desc": "Lengthens sides."},
+    // --- NEW POSES ---
+    {"name": "Plank Pose", "image": "assets/plank.jpg", "desc": "Core strength."},
+    {"name": "Cat Pose", "image": "assets/cat.jpg", "desc": "Spine flexibility."},
+    {"name": "Cow Pose", "image": "assets/cow.jpg", "desc": "Opens chest."},
+    {"name": "Low Lunge", "image": "assets/low-lunge.jpg", "desc": "Hip flexor stretch."},
+    {"name": "Boat Pose", "image": "assets/boat.jpg", "desc": "Abdominal balance."},
+    {"name": "Pigeon Pose", "image": "assets/pigeon.jpg", "desc": "Deep hip opener."},
+    {"name": "Downward Dog", "image": "assets/downward-dog.jpg", "desc": "Full body stretch."},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // MEMORY FIX: Initialize with the passed index
+    selectedIndex = widget.initialIndex;
+    _controller = PageController(viewportFraction: 0.72, initialPage: selectedIndex);
+  }
 
   void showConfirmPopup() {
     showModalBottomSheet(
@@ -76,9 +98,19 @@ class _PoseSelectionScreenState extends State<PoseSelectionScreen> {
               InkWell(
                 onTap: () {
                   Navigator.pop(context); 
+                  // Pass the poseName AND poseIndex to the next screen
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => TimerScreen(poseName: pose["name"])),
+                    MaterialPageRoute(
+                      builder: (context) => TimerScreen(
+                        poseName: pose["name"],
+                        poseIndex: selectedIndex,
+                        // NOTE: If you haven't updated TimerScreen to accept poseIndex yet,
+                        // you might need to update that file too. 
+                        // For now, this keeps your existing flow working.
+                        // poseIndex: selectedIndex, 
+                      )
+                    ),
                   );
                 },
                 child: Container(
@@ -148,19 +180,9 @@ class _PoseSelectionScreenState extends State<PoseSelectionScreen> {
   }
 
   @override
-  void initState() {
-    super.initState();
-    selectedIndex = 1;
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (_controller.hasClients) _controller.jumpToPage(1);
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[100],
-      // FIX: SingleChildScrollView prevents the "Yellow/Black" overflow error
       body: SingleChildScrollView(
         child: SafeArea(
           child: Column(
@@ -230,13 +252,12 @@ class _PoseSelectionScreenState extends State<PoseSelectionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 30), // Adjusted spacing
+                    const SizedBox(height: 30),
                     _buildPracticeSection(),
                     const SizedBox(height: 30),
                   ],
                 ),
               ),
-              // FIX: Removed Spacer() and just used padding for the button
               Padding(
                 padding: const EdgeInsets.all(20.0),
                 child: InkWell(

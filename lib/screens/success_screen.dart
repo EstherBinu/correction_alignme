@@ -6,12 +6,14 @@ class SuccessScreen extends StatelessWidget {
   final String poseName;
   final List<String> feedbackSummary;
   final bool isSuccess;
+  final int poseIndex; // NEW: To remember which slide to return to
 
   const SuccessScreen({
     super.key, 
     required this.poseName,
     required this.feedbackSummary,
     this.isSuccess = true,
+    required this.poseIndex, // NEW: Required parameter
   });
 
   // --- 1. DATA: Instructions Text ---
@@ -73,7 +75,50 @@ class SuccessScreen extends StatelessWidget {
       "2. Raise one arm overhead.",
       "3. Lean gently to the opposite side.",
       "4. Keep chest open."
-    ]
+    ],
+    // --- NEW POSES INSTRUCTIONS ---
+    "Plank Pose": [
+      "1. Start in a push-up position.",
+      "2. Keep body in a straight line from head to heels.",
+      "3. Engage your core (tighten abs).",
+      "4. Don't let hips sag or pike up."
+    ],
+    "Cat Pose": [
+      "1. Start on hands and knees (Tabletop).",
+      "2. Exhale and arch your back up toward ceiling.",
+      "3. Tuck your chin to your chest.",
+      "4. Draw your belly button in."
+    ],
+    "Cow Pose": [
+      "1. Start on hands and knees (Tabletop).",
+      "2. Inhale and drop your belly toward the floor.",
+      "3. Lift your chin and chest up.",
+      "4. Arch your spine downwards."
+    ],
+    "Low Lunge": [
+      "1. Step one foot forward between hands.",
+      "2. Lower your back knee to the floor.",
+      "3. Slide hips forward slightly.",
+      "4. Lift chest and raise arms overhead."
+    ],
+    "Boat Pose": [
+      "1. Sit on floor with knees bent.",
+      "2. Lean back slightly and lift feet off floor.",
+      "3. Extend legs (V-shape) if possible.",
+      "4. Reach arms forward parallel to ground."
+    ],
+    "Pigeon Pose": [
+      "1. Bring one knee forward behind your wrist.",
+      "2. Extend the other leg straight back.",
+      "3. Square your hips to the front.",
+      "4. Sit up tall or fold forward."
+    ],
+    "Downward Dog": [
+    "1. Start on hands and knees.",
+    "2. Lift knees and hips up high.",
+    "3. Straighten legs and push heels toward floor.",
+    "4. Press chest toward thighs (Inverted V-shape)."
+  ],
   };
 
   // --- 2. DATA: Image Paths (Matches your Selection Screen) ---
@@ -87,6 +132,14 @@ class SuccessScreen extends StatelessWidget {
     "Triangle Pose": "assets/triangle.jpg",
     "Forward Bend": "assets/forward-bend.jpg",
     "Side Stretch": "assets/side-stretch.jpg",
+    // --- NEW POSES IMAGES ---
+    "Plank Pose": "assets/plank.jpg",
+    "Cat Pose": "assets/cat.jpg",
+    "Cow Pose": "assets/cow.jpg",
+    "Low Lunge": "assets/low-lunge.jpg",
+    "Boat Pose": "assets/boat.jpg",
+    "Pigeon Pose": "assets/pigeon.jpg",
+    "Downward Dog": "assets/downward-dog.jpg",
   };
 
   // --- 3. LOGIC: Show Image Popup ---
@@ -284,9 +337,12 @@ class SuccessScreen extends StatelessWidget {
                       height: 55,
                       child: ElevatedButton(
                         onPressed: () {
+                          // MEMORY FIX: Return to the specific slide index
                           Navigator.pushAndRemoveUntil(
                             context,
-                            MaterialPageRoute(builder: (context) => const PoseSelectionScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => PoseSelectionScreen(initialIndex: poseIndex),
+                            ),
                             (route) => false,
                           );
                         },
