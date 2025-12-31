@@ -26,6 +26,11 @@ class _PoseSelectionScreenState extends State<PoseSelectionScreen> {
     {"name": "Tree Pose", "image": "assets/pigeon-pose.jpg", "desc": "Enhances stability."},
     {"name": "Warrior Pose", "image": "assets/warrior2.jpg", "desc": "Strengthens legs."},
     {"name": "Bridge Pose", "image": "assets/bridge-pose.jpg", "desc": "Opens chest."},
+    {"name": "Chair Pose", "image": "assets/chair-pose.jpg", "desc": "Strengthens thighs."},
+    {"name": "Cobra Pose", "image": "assets/cobra.jpg", "desc": "Strengthens back."},
+    {"name": "Triangle Pose", "image": "assets/triangle.jpg", "desc": "Full body stretch."},
+    {"name": "Forward Bend", "image": "assets/forward-bend.jpg", "desc": "Calms the mind."},
+    {"name": "Side Stretch", "image": "assets/side-stretch.jpg", "desc": "Lengthens sides."},
   ];
 
   void showConfirmPopup() {

@@ -4,165 +4,233 @@ import 'package:google_mlkit_pose_detection/google_mlkit_pose_detection.dart';
 class PoseEvaluation {
   final bool isCorrect;
   final String feedback;
-
   PoseEvaluation(this.isCorrect, this.feedback);
 }
 
 class PoseMatcher {
   static PoseEvaluation evaluate(Pose pose, String targetPoseName) {
-    // 1. GLOBAL CHECK: Is the body actually visible?
+    // 1. Global Visibility Check
     if (!_isBodyVisible(pose)) {
-      return PoseEvaluation(false, "Step back. Show your full body.");
+      return PoseEvaluation(false, "Step back. Show full body.");
     }
 
-    // 2. Route to Specific Pose Logic
-    if (targetPoseName == "Mountain Pose") {
-      return _checkMountainPose(pose);
-    } else if (targetPoseName == "Tree Pose") {
-      return _checkTreePose(pose);
-    } else if (targetPoseName == "Warrior Pose") {
-      return _checkWarriorPose(pose);
-    } else if (targetPoseName == "Bridge Pose") {
-      return _checkBridgePose(pose);
+    switch (targetPoseName) {
+      case "Mountain Pose": return _checkMountainPose(pose);
+      case "Tree Pose":     return _checkTreePose(pose);
+      case "Warrior Pose":  return _checkWarriorPose(pose);
+      case "Bridge Pose":   return _checkBridgePose(pose);
+      case "Chair Pose":    return _checkChairPose(pose);
+      case "Cobra Pose":    return _checkCobraPose(pose);
+      case "Triangle Pose": return _checkTrianglePose(pose);
+      case "Forward Bend":  return _checkForwardBend(pose);
+      case "Side Stretch":  return _checkSideStretch(pose);
+      default: return PoseEvaluation(false, "Unknown Pose");
     }
-    return PoseEvaluation(false, "Unknown Pose");
   }
 
-  // --- VISIBILITY CHECKER ---
   static bool _isBodyVisible(Pose pose) {
     final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
     final rightHip = pose.landmarks[PoseLandmarkType.rightHip];
-    final leftKnee = pose.landmarks[PoseLandmarkType.leftKnee];
-    final rightKnee = pose.landmarks[PoseLandmarkType.rightKnee];
-
-    if (leftHip == null || leftHip.likelihood < 0.5 ||
-        rightHip == null || rightHip.likelihood < 0.5 ||
-        leftKnee == null || leftKnee.likelihood < 0.5 ||
-        rightKnee == null || rightKnee.likelihood < 0.5) {
-      return false;
-    }
+    if (leftHip == null || leftHip.likelihood < 0.5 || rightHip == null) return false;
     return true;
   }
 
-  // --- MOUNTAIN POSE ---
+  // --- HELPER: Simple Check for Lying Down vs Standing ---
+  static bool _isLyingDown(Pose pose) {
+    final shoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
+    final hip = pose.landmarks[PoseLandmarkType.leftHip];
+    if (shoulder == null || hip == null) return false;
+    
+    // If vertical distance is less than horizontal, likely lying down
+    return (shoulder.y - hip.y).abs() < (shoulder.x - hip.x).abs();
+  }
+
+  // ================= POSES =================
+
+  // 1. MOUNTAIN POSE (Relaxed)
   static PoseEvaluation _checkMountainPose(Pose pose) {
+    // Removed strict vertical check that was failing you.
+    // Just checks straight body and arms down.
+    
     double hipAngle = _getAngle(pose, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee);
-    if (hipAngle < 165) return PoseEvaluation(false, "Stand tall. Don't bend forward.");
-
-    double lArm = _getAngle(pose, PoseLandmarkType.leftShoulder, PoseLandmarkType.leftElbow, PoseLandmarkType.leftWrist);
-    double rArm = _getAngle(pose, PoseLandmarkType.rightShoulder, PoseLandmarkType.rightElbow, PoseLandmarkType.rightWrist);
-    if (lArm < 160 || rArm < 160) return PoseEvaluation(false, "Straighten your arms completely.");
-
-    final leftWrist = pose.landmarks[PoseLandmarkType.leftWrist];
-    final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
-    if (leftWrist != null && leftHip != null && leftWrist.y < leftHip.y) {
-       return PoseEvaluation(false, "Lower your arms by your sides.");
+    if (hipAngle < 160) return PoseEvaluation(false, "Stand tall. Don't bend.");
+    
+    final lWrist = pose.landmarks[PoseLandmarkType.leftWrist];
+    final lHip = pose.landmarks[PoseLandmarkType.leftHip];
+    // Check if hands are roughly below hips
+    if (lWrist != null && lHip != null && lWrist.y < lHip.y - 40) {
+       return PoseEvaluation(false, "Lower your arms.");
     }
-
     return PoseEvaluation(true, "Perfect Mountain Pose!");
   }
 
-  // --- TREE POSE ---
+  // 2. TREE POSE (Fixed: Added Sequence Foot -> Hands Up -> Join Hands)
   static PoseEvaluation _checkTreePose(Pose pose) {
-    final leftAnkle = pose.landmarks[PoseLandmarkType.leftAnkle];
-    final rightAnkle = pose.landmarks[PoseLandmarkType.rightAnkle];
-    final leftKnee = pose.landmarks[PoseLandmarkType.leftKnee];
-    final rightKnee = pose.landmarks[PoseLandmarkType.rightKnee];
-    final nose = pose.landmarks[PoseLandmarkType.nose];
-    final leftWrist = pose.landmarks[PoseLandmarkType.leftWrist];
-    final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist];
-
-    if (leftAnkle == null || rightAnkle == null || leftKnee == null || rightKnee == null || nose == null || leftWrist == null || rightWrist == null) {
-       return PoseEvaluation(false, "Full body not visible.");
+    final lAnkle = pose.landmarks[PoseLandmarkType.leftAnkle];
+    final rAnkle = pose.landmarks[PoseLandmarkType.rightAnkle];
+    
+    // Step 1: Foot Raised
+    if (lAnkle != null && rAnkle != null) {
+      double yDiff = (lAnkle.y - rAnkle.y).abs();
+      if (yDiff < 40) return PoseEvaluation(false, "Lift your foot higher.");
     }
 
-    // Phase 1: Legs
-    bool isLeftStanding = leftAnkle.y > rightAnkle.y;
-    PoseLandmark standingKnee = isLeftStanding ? leftKnee : rightKnee;
-    PoseLandmark bentAnkle = isLeftStanding ? rightAnkle : leftAnkle;
+    // Step 2: Hands Overhead
+    final nose = pose.landmarks[PoseLandmarkType.nose];
+    final lWrist = pose.landmarks[PoseLandmarkType.leftWrist];
+    final rWrist = pose.landmarks[PoseLandmarkType.rightWrist];
 
-    if (bentAnkle.y > standingKnee.y + 60) return PoseEvaluation(false, "Lift your foot higher.");
+    bool handsUp = (lWrist != null && nose != null && lWrist.y < nose.y) &&
+                   (rWrist != null && nose != null && rWrist.y < nose.y);
+                   
+    if (!handsUp) {
+      return PoseEvaluation(false, "Raise arms overhead.");
+    }
 
-    // Phase 2: Arms
-    bool handsUp = leftWrist.y < nose.y && rightWrist.y < nose.y;
-    if (!handsUp) return PoseEvaluation(false, "Raise your arms overhead.");
-
-    // Phase 3: Prayer
-    double wristDistance = (leftWrist.x - rightWrist.x).abs();
-    if (wristDistance > 120) return PoseEvaluation(false, "Join your hands together.");
+    // Step 3: Hands Joined (Prayer) -- RESTORED THIS CHECK
+    double wristDist = (lWrist.x - rWrist!.x).abs();
+    if (wristDist > 120) {
+      return PoseEvaluation(false, "Join your hands.");
+    }
 
     return PoseEvaluation(true, "Perfect Tree Pose!");
   }
 
-  // --- WARRIOR II POSE ---
+  // 3. WARRIOR POSE (Fixed: Added Arm T-Shape Check)
   static PoseEvaluation _checkWarriorPose(Pose pose) {
-    final leftAnkle = pose.landmarks[PoseLandmarkType.leftAnkle];
-    final rightAnkle = pose.landmarks[PoseLandmarkType.rightAnkle];
-    final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
-    final rightShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
-    final leftWrist = pose.landmarks[PoseLandmarkType.leftWrist];
-    final rightWrist = pose.landmarks[PoseLandmarkType.rightWrist];
-
-    if (leftAnkle == null || rightAnkle == null || leftShoulder == null || rightShoulder == null || leftWrist == null || rightWrist == null) {
-      return PoseEvaluation(false, "Full body not visible.");
+    final lAnkle = pose.landmarks[PoseLandmarkType.leftAnkle];
+    final rAnkle = pose.landmarks[PoseLandmarkType.rightAnkle];
+    
+    // Step 1: Wide Stance
+    if (lAnkle != null && rAnkle != null) {
+      double width = (lAnkle.x - rAnkle.x).abs();
+      if (width < 80) return PoseEvaluation(false, "Step feet wider.");
     }
 
-    // 1. Stance
-    double footDist = (leftAnkle.x - rightAnkle.x).abs();
-    double shoulderDist = (leftShoulder.x - rightShoulder.x).abs();
-    if (footDist < shoulderDist * 2.0) return PoseEvaluation(false, "Step your feet wider apart.");
+    // Step 2: Knee Bend
+    double lKneeAngle = _getAngle(pose, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle);
+    double rKneeAngle = _getAngle(pose, PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle);
+    
+    bool isLeftBent = lKneeAngle < 150; 
+    bool isRightBent = rKneeAngle < 150;
+    
+    if (!isLeftBent && !isRightBent) return PoseEvaluation(false, "Bend your front knee.");
 
-    // 2. Arms
-    bool leftArmLevel = (leftWrist.y - leftShoulder.y).abs() < 60;
-    bool rightArmLevel = (rightWrist.y - rightShoulder.y).abs() < 60;
-    if (!leftArmLevel || !rightArmLevel) return PoseEvaluation(false, "Raise arms to shoulder level.");
+    // Step 3: Arms T-Shape -- RESTORED THIS CHECK
+    final lShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
+    final rShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+    final lWrist = pose.landmarks[PoseLandmarkType.leftWrist];
+    final rWrist = pose.landmarks[PoseLandmarkType.rightWrist];
 
-    // 3. Lunge
-    double leftKneeAngle = _getAngle(pose, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle);
-    double rightKneeAngle = _getAngle(pose, PoseLandmarkType.rightHip, PoseLandmarkType.rightKnee, PoseLandmarkType.rightAnkle);
-    bool isLeftBent = leftKneeAngle < 135;
-    bool isRightBent = rightKneeAngle < 135;
-    bool isLeftStraight = leftKneeAngle > 150;
-    bool isRightStraight = rightKneeAngle > 150;
-
-    if ((isLeftBent && isRightStraight) || (isRightBent && isLeftStraight)) {
-      return PoseEvaluation(true, "Perfect Warrior II!");
+    if (lShoulder != null && lWrist != null) {
+      if ((lWrist.y - lShoulder.y).abs() > 60) return PoseEvaluation(false, "Raise arms to shoulder level.");
     }
-    return PoseEvaluation(false, "Bend your front knee more.");
+    if (rShoulder != null && rWrist != null) {
+      if ((rWrist.y - rShoulder.y).abs() > 60) return PoseEvaluation(false, "Raise arms to shoulder level.");
+    }
+
+    return PoseEvaluation(true, "Perfect Warrior Pose!");
   }
 
-  // --- BRIDGE POSE ---
+  // 4. BRIDGE POSE (Fixed: Removed Vertical Check, Tuned Hips)
   static PoseEvaluation _checkBridgePose(Pose pose) {
-    // Ideally seen from the side.
-    final leftHip = pose.landmarks[PoseLandmarkType.leftHip];
-    final leftShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
-    final leftKnee = pose.landmarks[PoseLandmarkType.leftKnee];
-
-    if (leftHip == null || leftShoulder == null || leftKnee == null) {
-      return PoseEvaluation(false, "Side view needed.");
-    }
-
-    // 1. Check Lift: Are Hips higher than Shoulders?
-    // In screen coordinates (Y increases down), "Higher" means SMALLER Y value.
-    bool hipsLifted = leftHip.y < leftShoulder.y; // Hips above shoulders
+    // Removed strict vertical check because arching back can confuse it.
     
-    // We can also check if hips are roughly inline with knees horizontally or above them
-    // But mainly, hips must not be on the floor (similar Y to shoulder).
-    // Let's require Hips to be at least 50 pixels higher (smaller Y) than shoulders.
-    if (leftHip.y > leftShoulder.y - 30) {
-      return PoseEvaluation(false, "Lift your hips higher.");
-    }
-
-    // 2. Check Knees: Should be bent, not flat.
-    double kneeAngle = _getAngle(pose, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle);
+    final hip = pose.landmarks[PoseLandmarkType.leftHip];
+    final shoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
     
-    // Bridge pose knee angle is usually acute or 90 degrees (~45-90).
-    // If it's > 150, legs are straight on floor.
-    if (kneeAngle > 150) {
-      return PoseEvaluation(false, "Bend your knees.");
-    }
+    if (hip == null || shoulder == null) return PoseEvaluation(false, "Side view needed.");
 
+    // Hips should be HIGHER (smaller Y) than shoulders.
+    // Added 20px buffer. If hip is lower (bigger Y) than shoulder - 20, fail.
+    if (hip.y > shoulder.y - 20) {
+      return PoseEvaluation(false, "Lift hips higher.");
+    }
+    
     return PoseEvaluation(true, "Perfect Bridge Pose!");
+  }
+
+  // 5. CHAIR POSE
+  static PoseEvaluation _checkChairPose(Pose pose) {
+    double kneeAngle = _getAngle(pose, PoseLandmarkType.leftHip, PoseLandmarkType.leftKnee, PoseLandmarkType.leftAnkle);
+    if (kneeAngle > 165) return PoseEvaluation(false, "Bend knees like sitting.");
+    if (kneeAngle < 70) return PoseEvaluation(false, "Don't squat too low.");
+
+    final wrist = pose.landmarks[PoseLandmarkType.leftWrist];
+    final shoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
+    // Arms up check
+    if (wrist != null && shoulder != null && wrist.y > shoulder.y) {
+      return PoseEvaluation(false, "Raise arms overhead.");
+    }
+    return PoseEvaluation(true, "Perfect Chair Pose!");
+  }
+
+  // 6. COBRA POSE (Added Horizontal Check)
+  static PoseEvaluation _checkCobraPose(Pose pose) {
+    // If user is clearly standing, warn them
+    if (!_isLyingDown(pose)) return PoseEvaluation(false, "Lie on your stomach.");
+
+    final hip = pose.landmarks[PoseLandmarkType.leftHip];
+    final shoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
+
+    // Chest Lift: Shoulder Y should be SMALLER (Higher) than Hip Y
+    if (hip != null && shoulder != null) {
+       // If shoulder is below or equal to hip level (flat), fail
+       if (shoulder.y > hip.y - 10) return PoseEvaluation(false, "Lift your chest.");
+    }
+
+    return PoseEvaluation(true, "Perfect Cobra Pose!");
+  }
+
+  // 7. TRIANGLE POSE
+  static PoseEvaluation _checkTrianglePose(Pose pose) {
+    final lAnkle = pose.landmarks[PoseLandmarkType.leftAnkle];
+    final rAnkle = pose.landmarks[PoseLandmarkType.rightAnkle];
+    
+    if (lAnkle != null && rAnkle != null) {
+      double width = (lAnkle.x - rAnkle.x).abs();
+      if (width < 80) return PoseEvaluation(false, "Step feet wider.");
+    }
+    
+    final lShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
+    final rShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+    double tilt = (lShoulder!.y - rShoulder!.y).abs();
+    
+    if (tilt < 20) return PoseEvaluation(false, "Tilt body to side.");
+
+    return PoseEvaluation(true, "Perfect Triangle Pose!");
+  }
+
+  // 8. FORWARD BEND
+  static PoseEvaluation _checkForwardBend(Pose pose) {
+    final hip = pose.landmarks[PoseLandmarkType.leftHip];
+    final shoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
+    
+    // Hips should be HIGHER (smaller Y) than Shoulders
+    if (hip != null && shoulder != null && hip.y > shoulder.y) {
+      return PoseEvaluation(false, "Fold forward more.");
+    }
+    return PoseEvaluation(true, "Perfect Forward Bend!");
+  }
+
+  // 9. SIDE STRETCH
+  static PoseEvaluation _checkSideStretch(Pose pose) {
+    final lShoulder = pose.landmarks[PoseLandmarkType.leftShoulder];
+    final rShoulder = pose.landmarks[PoseLandmarkType.rightShoulder];
+    double tilt = (lShoulder!.y - rShoulder!.y).abs();
+    
+    if (tilt < 15) return PoseEvaluation(false, "Lean to the side.");
+
+    final nose = pose.landmarks[PoseLandmarkType.nose];
+    final lWrist = pose.landmarks[PoseLandmarkType.leftWrist];
+    final rWrist = pose.landmarks[PoseLandmarkType.rightWrist];
+    
+    bool armUp = (lWrist != null && nose != null && lWrist.y < nose.y) || 
+                 (rWrist != null && nose != null && rWrist.y < nose.y);
+                 
+    if (!armUp) return PoseEvaluation(false, "Raise one arm.");
+
+    return PoseEvaluation(true, "Great Side Stretch!");
   }
 
   // --- MATH HELPER ---
