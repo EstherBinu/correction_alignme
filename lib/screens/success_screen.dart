@@ -1,129 +1,45 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
+import 'package:url_launcher/url_launcher.dart'; // NEW: For YouTube
 import 'pose_selection_screen.dart';
 
 class SuccessScreen extends StatelessWidget {
   final String poseName;
   final List<String> feedbackSummary;
   final bool isSuccess;
-  final int poseIndex; // NEW: To remember which slide to return to
+  final int poseIndex; // To remember which slide to return to
 
   const SuccessScreen({
     super.key, 
     required this.poseName,
     required this.feedbackSummary,
     this.isSuccess = true,
-    required this.poseIndex, // NEW: Required parameter
+    required this.poseIndex,
   });
 
   // --- 1. DATA: Instructions Text ---
   static const Map<String, List<String>> _poseInstructions = {
-    "Mountain Pose": [
-      "1. Stand tall with feet together.",
-      "2. Keep your legs straight.",
-      "3. Relax your shoulders down.",
-      "4. Let arms hang by your sides.",
-      "5. Look straight ahead."
-    ],
-    "Tree Pose": [
-      "1. Stand on one leg (standing leg straight).",
-      "2. Place your other foot on your inner thigh or calf.",
-      "3. Open your bent knee to the side.",
-      "4. Raise your arms overhead.",
-      "5. Join your palms together (Prayer position)."
-    ],
-    "Warrior Pose": [
-      "1. Step your feet wide apart.",
-      "2. Turn your right foot out 90 degrees.",
-      "3. Bend your front knee (aim for 90 degrees).",
-      "4. Keep your back leg straight.",
-      "5. Raise arms to shoulder height (T-Shape)."
-    ],
-    "Bridge Pose": [
-      "1. Lie on your back.",
-      "2. Bend your knees, feet flat on floor.",
-      "3. Lift your hips high toward the ceiling.",
-      "4. Keep shoulders grounded.",
-      "5. Ensure knees are directly over ankles."
-    ],
-    "Chair Pose": [
-      "1. Stand tall, feet together.",
-      "2. Bend knees like sitting in a chair.",
-      "3. Raise arms overhead.",
-      "4. Keep back straight."
-    ],
-    "Cobra Pose": [
-      "1. Lie on stomach.",
-      "2. Hands under shoulders.",
-      "3. Push chest up off floor.",
-      "4. Keep hips grounded."
-    ],
-    "Triangle Pose": [
-      "1. Feet wide apart.",
-      "2. Reach forward and tilt down.",
-      "3. Bottom hand touches shin/floor.",
-      "4. Top hand reaches up to ceiling."
-    ],
-    "Forward Bend": [
-      "1. Stand tall.",
-      "2. Hinge at hips to fold forward.",
-      "3. Reach hands to floor or shins.",
-      "4. Keep legs straight or micro-bent."
-    ],
-    "Side Stretch": [
-      "1. Stand tall, feet hip-width.",
-      "2. Raise one arm overhead.",
-      "3. Lean gently to the opposite side.",
-      "4. Keep chest open."
-    ],
-    // --- NEW POSES INSTRUCTIONS ---
-    "Plank Pose": [
-      "1. Start in a push-up position.",
-      "2. Keep body in a straight line from head to heels.",
-      "3. Engage your core (tighten abs).",
-      "4. Don't let hips sag or pike up."
-    ],
-    "Cat Pose": [
-      "1. Start on hands and knees (Tabletop).",
-      "2. Exhale and arch your back up toward ceiling.",
-      "3. Tuck your chin to your chest.",
-      "4. Draw your belly button in."
-    ],
-    "Cow Pose": [
-      "1. Start on hands and knees (Tabletop).",
-      "2. Inhale and drop your belly toward the floor.",
-      "3. Lift your chin and chest up.",
-      "4. Arch your spine downwards."
-    ],
-    "Low Lunge": [
-      "1. Step one foot forward between hands.",
-      "2. Lower your back knee to the floor.",
-      "3. Slide hips forward slightly.",
-      "4. Lift chest and raise arms overhead."
-    ],
-    "Boat Pose": [
-      "1. Sit on floor with knees bent.",
-      "2. Lean back slightly and lift feet off floor.",
-      "3. Extend legs (V-shape) if possible.",
-      "4. Reach arms forward parallel to ground."
-    ],
-    "Pigeon Pose": [
-      "1. Bring one knee forward behind your wrist.",
-      "2. Extend the other leg straight back.",
-      "3. Square your hips to the front.",
-      "4. Sit up tall or fold forward."
-    ],
-    "Downward Dog": [
-    "1. Start on hands and knees.",
-    "2. Lift knees and hips up high.",
-    "3. Straighten legs and push heels toward floor.",
-    "4. Press chest toward thighs (Inverted V-shape)."
-  ],
+    "Mountain Pose": ["1. Stand tall.", "2. Feet together.", "3. Shoulders relaxed.", "4. Arms by sides."],
+    "Tree Pose": ["1. Stand on one leg.", "2. Foot on inner thigh.", "3. Knee out to side.", "4. Hands in prayer."],
+    "Warrior Pose": ["1. Feet wide apart.", "2. Front knee bent.", "3. Arms T-shape.", "4. Look over front hand."],
+    "Bridge Pose": ["1. Lie on back.", "2. Knees bent.", "3. Lift hips high.", "4. Chin to chest."],
+    "Chair Pose": ["1. Feet together.", "2. Bend knees.", "3. Arms up.", "4. Back straight."],
+    "Cobra Pose": ["1. Lie on stomach.", "2. Push chest up.", "3. Hips on floor.", "4. Look up."],
+    "Triangle Pose": ["1. Wide stance.", "2. Lean sideways.", "3. One hand down, one up."],
+    "Forward Bend": ["1. Stand tall.", "2. Fold forward.", "3. Touch floor/shins."],
+    "Side Stretch": ["1. Stand tall.", "2. Raise one arm.", "3. Lean to side."],
+    "Plank Pose": ["1. Push-up position.", "2. Body straight line.", "3. Core tight.", "4. Don't sag hips."],
+    "Cat Pose": ["1. Hands and knees.", "2. Arch back up.", "3. Chin to chest.", "4. Look at belly."],
+    "Cow Pose": ["1. Hands and knees.", "2. Drop belly down.", "3. Lift head up.", "4. Arch spine down."],
+    "Low Lunge": ["1. One foot forward.", "2. Back knee on floor.", "3. Hips forward.", "4. Arms up."],
+    "Boat Pose": ["1. Sit on floor.", "2. Lean back slightly.", "3. Lift legs up.", "4. Arms forward (V-shape)."],
+    "Pigeon Pose": ["1. One leg forward bent.", "2. Back leg straight.", "3. Hips square.", "4. Sit tall."],
+    "Downward Dog": ["1. Hands and knees.", "2. Hips up high.", "3. Legs straight.", "4. Chest to thighs."],
   };
 
-  // --- 2. DATA: Image Paths (Matches your Selection Screen) ---
+  // --- 2. DATA: Image Paths ---
   static const Map<String, String> _poseImages = {
-    "Mountain Pose": "assets/cat-cow.jpg",
+    "Mountain Pose": "assets/mountain.jpg",
     "Tree Pose": "assets/pigeon-pose.jpg",
     "Warrior Pose": "assets/warrior2.jpg",
     "Bridge Pose": "assets/bridge-pose.jpg",
@@ -132,7 +48,6 @@ class SuccessScreen extends StatelessWidget {
     "Triangle Pose": "assets/triangle.jpg",
     "Forward Bend": "assets/forward-bend.jpg",
     "Side Stretch": "assets/side-stretch.jpg",
-    // --- NEW POSES IMAGES ---
     "Plank Pose": "assets/plank.jpg",
     "Cat Pose": "assets/cat.jpg",
     "Cow Pose": "assets/cow.jpg",
@@ -142,7 +57,40 @@ class SuccessScreen extends StatelessWidget {
     "Downward Dog": "assets/downward-dog.jpg",
   };
 
-  // --- 3. LOGIC: Show Image Popup ---
+  // --- 3. DATA: YouTube Video Links (NEW) ---
+  static const Map<String, String> _poseVideos = {
+    "Mountain Pose": "https://youtu.be/5NxDs-ovJU8?si=2lS5j98kd4FYAt1D",
+    "Tree Pose": "https://www.youtube.com/watch?v=wdln9qWYloU",
+    "Warrior Pose": "https://www.youtube.com/watch?v=5rM6a54t72M",
+    "Bridge Pose": "https://www.youtube.com/watch?v=8Z6i6v9y8i4",
+    "Chair Pose": "https://www.youtube.com/watch?v=4pP5p4z5p5k",
+    "Cobra Pose": "https://www.youtube.com/watch?v=JDcdhTuycOI",
+    "Triangle Pose": "https://www.youtube.com/watch?v=upTKd4834b4",
+    "Forward Bend": "https://www.youtube.com/watch?v=g7M6x04q2h8",
+    "Side Stretch": "https://www.youtube.com/watch?v=7uKjB4i_p5s",
+    "Plank Pose": "https://www.youtube.com/watch?v=pSHjTRCQxIw",
+    "Cat Pose": "https://www.youtube.com/watch?v=GoLt0i4y1bk",
+    "Cow Pose": "https://www.youtube.com/watch?v=GoLt0i4y1bk",
+    "Low Lunge": "https://www.youtube.com/watch?v=0h0X8k7z8z8",
+    "Boat Pose": "https://www.youtube.com/watch?v=4jW0J0h7k0o",
+    "Pigeon Pose": "https://www.youtube.com/results?search_query=pigeon+pose+yoga",
+    "Downward Dog": "https://www.youtube.com/watch?v=EC7RGJ9sRJk",
+  };
+
+  // --- 4. LOGIC: Launch Video ---
+  Future<void> _launchVideo() async {
+    final String url = _poseVideos[poseName] ?? "https://www.youtube.com/results?search_query=$poseName+yoga";
+    final Uri uri = Uri.parse(url);
+    try {
+      if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw 'Could not launch $url';
+      }
+    } catch (e) {
+      debugPrint("Error launching video: $e");
+    }
+  }
+
+  // --- 5. LOGIC: Show Image Popup ---
   void _showImageTutorial(BuildContext context) {
     final String imagePath = _poseImages[poseName] ?? "";
     
@@ -307,7 +255,7 @@ class SuccessScreen extends StatelessWidget {
 
             // --- BOTTOM BUTTONS (Fixed at bottom) ---
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
                 boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 10, offset: const Offset(0, -5))],
@@ -324,15 +272,33 @@ class SuccessScreen extends StatelessWidget {
                           side: const BorderSide(color: Color(0xFF7EA6FF), width: 2),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
                         ),
-                        child: const Text("Visual Tutorial", style: TextStyle(color: Color(0xFF7EA6FF), fontSize: 16, fontWeight: FontWeight.bold)),
+                        child: const Icon(Icons.image, color: Color(0xFF7EA6FF)),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(width: 10),
+
+                  // Button 2: Video Tutorial (YouTube) - NEW
+                  Expanded(
+                    child: SizedBox(
+                      height: 55,
+                      child: OutlinedButton(
+                        onPressed: _launchVideo,
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Colors.red, width: 2),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                        ),
+                        child: const Icon(Icons.play_circle_fill, color: Colors.red, size: 30),
                       ),
                     ),
                   ),
                   
-                  const SizedBox(width: 15),
+                  const SizedBox(width: 10),
 
-                  // Button 2: Back to Menu
+                  // Button 3: Back to Menu
                   Expanded(
+                    flex: 2, // Make this button wider
                     child: SizedBox(
                       height: 55,
                       child: ElevatedButton(

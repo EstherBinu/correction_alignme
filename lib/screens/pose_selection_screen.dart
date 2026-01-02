@@ -28,7 +28,7 @@ class _PoseSelectionScreenState extends State<PoseSelectionScreen> {
 
   // --- UPDATED LIST: 15 POSES ---
   final List<Map<String, dynamic>> poses = [
-    {"name": "Mountain Pose", "image": "assets/cat-cow.jpg", "desc": "Improves posture."},
+    {"name": "Mountain Pose", "image": "assets/mountain.jpg", "desc": "Improves posture."},
     {"name": "Tree Pose", "image": "assets/pigeon-pose.jpg", "desc": "Enhances stability."},
     {"name": "Warrior Pose", "image": "assets/warrior2.jpg", "desc": "Strengthens legs."},
     {"name": "Bridge Pose", "image": "assets/bridge-pose.jpg", "desc": "Opens chest."},
